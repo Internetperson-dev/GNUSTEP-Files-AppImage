@@ -1,9 +1,8 @@
-name: Build AppImage
+name: Build GNUstep FM AppImage
 
 on:
   push:
     branches: [main]
-  pull_request:
 
 jobs:
   build:
@@ -16,28 +15,25 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake git gnustep gnustep-make \
-            gnustep-base-runtime libgnustep-gui-dev wget patchelf
+        sudo apt-get install -y gnustep gnustep-make gnustep-base-runtime \
+            gnustep-gui-runtime gobjc wget patchelf
 
     - name: Build GNUstep FM
       run: |
-        mkdir -p build && cd build
-        cmake ..
-        make -j$(nproc)
-        make install DESTDIR=$PWD/AppDir/usr
+        . /usr/share/GNUstep/Makefiles/GNUstep.sh
+        make
+        make install INSTALL_ROOT=$PWD/AppDir/usr
 
     - name: Setup AppDir
       run: |
-        mkdir -p build/AppDir/usr/bin
-        cp build/usr/bin/fm build/AppDir/usr/bin/
-        # copy desktop file
-        cp resources/fm.desktop build/AppDir/
-        # copy icon
-        cp resources/fm.png build/AppDir/
+        mkdir -p AppDir
+        # copy desktop and icon
+        cp resources/fm.desktop AppDir/
+        cp resources/fm.png AppDir/
 
         # create AppRun
-        echo -e '#!/bin/bash\nHERE="$(dirname "$(readlink -f "${0}")")"\nexport LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"\n"$HERE/usr/bin/fm"' > build/AppDir/AppRun
-        chmod +x build/AppDir/AppRun
+        echo -e '#!/bin/bash\nHERE="$(dirname "$(readlink -f "${0}")")"\nexport LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"\n"$HERE/usr/bin/fm"' > AppDir/AppRun
+        chmod +x AppDir/AppRun
 
     - name: Download AppImageTool
       run: |
@@ -46,4 +42,4 @@ jobs:
 
     - name: Build AppImage
       run: |
-        ./appimagetool-x86_64.AppImage build/AppDir
+        ./appimagetool-x86_64.AppImage AppDir
