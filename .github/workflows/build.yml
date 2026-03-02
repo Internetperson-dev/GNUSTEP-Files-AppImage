@@ -1,0 +1,49 @@
+name: Build AppImage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake git gnustep gnustep-make \
+            gnustep-base-runtime libgnustep-gui-dev wget patchelf
+
+    - name: Build GNUstep FM
+      run: |
+        mkdir -p build && cd build
+        cmake ..
+        make -j$(nproc)
+        make install DESTDIR=$PWD/AppDir/usr
+
+    - name: Setup AppDir
+      run: |
+        mkdir -p build/AppDir/usr/bin
+        cp build/usr/bin/fm build/AppDir/usr/bin/
+        # copy desktop file
+        cp resources/fm.desktop build/AppDir/
+        # copy icon
+        cp resources/fm.png build/AppDir/
+
+        # create AppRun
+        echo -e '#!/bin/bash\nHERE="$(dirname "$(readlink -f "${0}")")"\nexport LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"\n"$HERE/usr/bin/fm"' > build/AppDir/AppRun
+        chmod +x build/AppDir/AppRun
+
+    - name: Download AppImageTool
+      run: |
+        wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+        chmod +x appimagetool-x86_64.AppImage
+
+    - name: Build AppImage
+      run: |
+        ./appimagetool-x86_64.AppImage build/AppDir
