@@ -65,7 +65,7 @@ jobs:
 
       # 8. Upload AppImage as artifact
       - name: Upload AppImage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: GNUstep-FM-AppImage
           path: build/*.AppImage
