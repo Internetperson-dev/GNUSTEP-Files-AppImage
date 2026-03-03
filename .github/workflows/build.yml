@@ -1,6 +1,7 @@
 name: Build GNUstep FM AppImage
 
 on:
+  workflow_dispatch:   # allows running from GitHub web interface
   push:
     branches: [main]
   pull_request:
@@ -8,19 +9,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: gnustep/gnustep-devel:latest
 
     steps:
       # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Install additional dependencies
+      # 2. Install GNUstep and dependencies
       - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install -y wget patchelf desktop-file-utils libgtk-3-dev
+          sudo apt-get update
+          sudo apt-get install -y \
+            gnustep gnustep-make gnustep-base-runtime gnustep-gui-runtime \
+            gobjc wget patchelf desktop-file-utils libgtk-3-dev build-essential
 
       # 3. Setup GNUstep environment
       - name: Setup GNUstep environment
@@ -44,7 +45,7 @@ jobs:
           cp resources/fm.desktop build/AppDir/
           cp resources/fm.png build/AppDir/
 
-          # create AppRun launcher flush-left
+          # flush-left AppRun
           printf '%s\n' '#!/bin/bash' \
           'HERE="$(dirname "$(readlink -f "${0}")")"' \
           'export LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"' \
