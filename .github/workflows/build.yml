@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install build dependencies
       run: |
@@ -58,7 +58,7 @@ jobs:
         ./appimagetool-x86_64.AppImage AppDir
 
     - name: Upload AppImage
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: GWorkspace-AppImage
         path: "*.AppImage"
