@@ -107,8 +107,8 @@ jobs:
       # --------------------------------------------------
       - name: Install ICU 78
         run: |
-          wget https://github.com/unicode-org/icu/releases/download/release-78-1/icu4c-78_1-src.tgz
-          tar xf icu4c-78_1-src.tgz
+          wget https://github.com/unicode-org/icu/releases/download/release-78.1/icu4c-78.1-sources.tgz
+          tar xf icu4c-78.1-sources.tgz
           cd icu/source
           ./configure --prefix=/usr/local
           make -j$(nproc)
