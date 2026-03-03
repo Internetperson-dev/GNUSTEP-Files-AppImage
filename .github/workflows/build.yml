@@ -1,7 +1,7 @@
-name: Build GNUstep FM AppImage
+name: Build GWorkspace AppImage
 
 on:
-  workflow_dispatch:   # allows running from GitHub web interface
+  workflow_dispatch:  # allows manual run
   push:
     branches: [main]
   pull_request:
@@ -11,61 +11,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
-      # 2. Install GNUstep and dependencies
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            gnustep gnustep-make gnustep-base-runtime gnustep-gui-runtime \
-            gobjc wget patchelf desktop-file-utils libgtk-3-dev build-essential
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential autoconf automake libtool gobjc \
+          gnustep gnustep-make gnustep-base-runtime gnustep-gui-runtime \
+          gnustep-libobjc2-runtime wget patchelf libgtk-3-dev libsqlite3-dev
 
-      # 3. Setup GNUstep environment
-      - name: Setup GNUstep environment
-        run: |
-          . /usr/share/GNUstep/Makefiles/GNUstep.sh
-          echo "GNUstep environment ready"
+    - name: Setup GNUstep environment
+      run: |
+        . /usr/share/GNUstep/Makefiles/GNUstep.sh
+        echo "GNUstep ready"
 
-      # 4. Build the GNUstep File Manager
-      - name: Build GNUstep File Manager
-        run: |
-          . /usr/share/GNUstep/Makefiles/GNUstep.sh
-          mkdir -p build
-          cd build
-          make -C ../
-          make -C ../ install INSTALL_ROOT=$PWD/AppDir/usr
+    - name: Configure and Build
+      run: |
+        . /usr/share/GNUstep/Makefiles/GNUstep.sh
+        ./configure
+        make -j$(nproc)
+        DESTDIR=$PWD/AppDir/usr make install
 
-      # 5. Setup AppDir and flush-left AppRun
-      - name: Setup AppDir
-        run: |
-          mkdir -p build/AppDir
-          cp resources/fm.desktop build/AppDir/
-          cp resources/fm.png build/AppDir/
+    - name: Build AppDir
+      run: |
+        mkdir -p AppDir
+        # copy .desktop and icon from repo if present
+        cp Resources/GWorkspace.desktop AppDir/ || true
+        cp Resources/GWorkspace.png AppDir/ || true
 
-          # flush-left AppRun
-          printf '%s\n' '#!/bin/bash' \
-          'HERE="$(dirname "$(readlink -f "${0}")")"' \
-          'export LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"' \
-          '"$HERE/usr/bin/fm"' > build/AppDir/AppRun
-          chmod +x build/AppDir/AppRun
+        # flush-left AppRun
+        printf '%s\n' '#!/bin/bash' \
+        'HERE="$(dirname "$(readlink -f "${0}")")"' \
+        'export LD_LIBRARY_PATH="$HERE/usr/lib:$LD_LIBRARY_PATH"' \
+        '"$HERE/usr/bin/GWorkspace"' > AppDir/AppRun
+        chmod +x AppDir/AppRun
 
-      # 6. Download AppImageTool
-      - name: Download AppImageTool
-        run: |
-          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-          chmod +x appimagetool-x86_64.AppImage
+    - name: Download AppImageTool
+      run: |
+        wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+        chmod +x appimagetool-x86_64.AppImage
 
-      # 7. Build the AppImage
-      - name: Build AppImage
-        run: |
-          ./appimagetool-x86_64.AppImage build/AppDir
+    - name: Build AppImage
+      run: |
+        ./appimagetool-x86_64.AppImage AppDir
 
-      # 8. Upload AppImage as artifact
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: GNUstep-FM-AppImage
-          path: build/*.AppImage
+    - name: Upload AppImage
+      uses: actions/upload-artifact@v3
+      with:
+        name: GWorkspace-AppImage
+        path: "*.AppImage"
